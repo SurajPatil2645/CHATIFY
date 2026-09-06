@@ -5,25 +5,25 @@ import { sendWelcomeEmail } from '../emails/emailHandler.js';
 import { ENV } from '../lib/env.js';
 
 export const signup = async (req, res) => {
-    const {fullname, email, password} = req.body;
+    const { fullname, email, password } = req.body;
 
     try {
-        if(!fullname || !email || !password) {
-            return res.status(400).json({message: "Please provide all required fields"});
+        if (!fullname || !email || !password) {
+            return res.status(400).json({ message: "Please provide all required fields" });
         }
 
-        if(password.length < 6) {
-            return res.status(400).json({message: "Password must be at least 6 characters long"});
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters long" });
         }
 
         const emailregex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if(!emailregex.test(email)) {
-            return res.status(400).json({message: "Please provide a valid email address"});
+        if (!emailregex.test(email)) {
+            return res.status(400).json({ message: "Please provide a valid email address" });
         }
 
-        const user = await User.findOne({email});
-        if(user) {
-            return res.status(400).json({message: "User already exists"});
+        const user = await User.findOne({ email });
+        if (user) {
+            return res.status(400).json({ message: "User already exists" });
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -35,17 +35,17 @@ export const signup = async (req, res) => {
             password: hashedPassword,
         });
 
-        if(newUser) {
+        if (newUser) {
             await newUser.save();
             generateToken(newUser._id, res);
-            try{
+            try {
                 await sendWelcomeEmail(newUser.email, newUser.fullname, ENV.CLIENT_URL);
             } catch (error) {
                 console.error("Error sending welcome email:", error);
             }
-            return res.status(201).json({message: "User created successfully"});
+            return res.status(201).json({ message: "User created successfully" });
         } else {
-            return res.status(400).json({message: "Invalid user data"});
+            return res.status(400).json({ message: "Invalid user data" });
         }
     } catch (error) {
         const errorCode = error?.code === 11000 ? "DUPLICATE_KEY" : "SIGNUP_ERROR";
@@ -55,9 +55,47 @@ export const signup = async (req, res) => {
             method: req.method,
             path: req.path,
         });
-        if(errorCode === "DUPLICATE_KEY") {
-            return res.status(400).json({message: "User already exists"});
+        if (errorCode === "DUPLICATE_KEY") {
+            return res.status(400).json({ message: "User already exists" });
         }
-        return res.status(500).json({message: "Server error"});
+        return res.status(500).json({ message: "Server error" });
     }
+};
+
+export const signin = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ message: "Please provide all required fields" });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        generateToken(user._id, res);
+        return res.status(200).json({ message: "User logged in successfully" });
+
+    } catch (error) {
+        console.error("Signin failed:", error);
+        return res.status(500).json({
+            message: "Internal Server error",
+            // error: error.message
+        });
+    }
+};
+
+export const logout = (_, res) => {
+    res.cookie('token', '', {
+        httpOnly: true,
+        expires: new Date(0),
+    });
+    return res.status(200).json({ message: "User logged out successfully" });
 };
