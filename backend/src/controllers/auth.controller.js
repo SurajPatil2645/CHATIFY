@@ -47,7 +47,6 @@ export const signup = async (req, res) => {
         } else {
             return res.status(400).json({message: "Invalid user data"});
         }
-
     } catch (error) {
         const errorCode = error?.code === 11000 ? "DUPLICATE_KEY" : "SIGNUP_ERROR";
         console.error("Signup failed", {
