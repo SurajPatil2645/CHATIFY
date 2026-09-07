@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '../lib/utils.js';
 import { sendWelcomeEmail } from '../emails/emailHandler.js';
 import { ENV } from '../lib/env.js';
+import cloudinary from '../lib/cloudinary.js';
 
 export const signup = async (req, res) => {
     const { fullname, email, password } = req.body;
@@ -100,3 +101,39 @@ export const logout = (_, res) => {
     });
     return res.status(200).json({ message: "User logged out successfully" });
 };
+
+export const updateProfile = async (req, res) => {
+    try{
+        const { profilePicture, fullname, email } = req.body;
+        const userId = req.user._id;
+
+        if (!profilePicture && !fullname && !email) {
+            return res.status(400).json({ message: "Please provide at least one field to update" });
+        }
+
+        const uploadResult = await cloudinary.uploader.upload(profilePicture, {
+            folder: 'profile_pictures',
+            width: 200,
+            height: 200,
+            crop: 'fill',
+        });
+
+        const updatedProfilePicture = uploadResult.secure_url;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { profilePic: updatedProfilePicture, fullname, email },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({ message: "Profile updated successfully", user: updatedUser });
+    } catch (error) {
+        console.error("Profile update failed:", error);
+        return res.status(500).json({ message: "Internal Server Error" }
+        )
+    }
+}
