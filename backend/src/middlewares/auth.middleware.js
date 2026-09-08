@@ -3,9 +3,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 export const protectRoute = async (req, res, next) => {
-    console.log("Protect route middleware invoked");
     const token = req.cookies.token;
-    console.log("Token from cookies:", token);
     if (!token) {
         return res.status(401).json({ message: "Unauthorized access" });
     }
