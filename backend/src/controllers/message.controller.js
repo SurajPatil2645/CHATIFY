@@ -37,6 +37,18 @@ export const sendMessage = async (req, res) => {
         const { id: receiverId } = req.params;
         const senderId = req.user.id;
 
+        if (!text && !image) {
+            return res.status(400).json({ message: 'Message text or image is required' });
+        }
+
+        if(senderId === receiverId) {
+            return res.status(400).json({ message: 'You cannot send a message to yourself' });
+        }
+
+        if(!await User.findById(receiverId)) {
+            return res.status(404).json({ message: 'Receiver not found' });
+        }
+        
         let imageUrl;
         if (image) {
             // Assuming the image is sent as a base64 string, you can decode and save it to your server or cloud storage.
