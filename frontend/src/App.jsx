@@ -1,14 +1,23 @@
-import { Route, Routes } from "react-router"
+import { Navigate, Route, Routes } from "react-router"
 import ChatPage from "./pages/ChatPage"
 import LoginPage from "./pages/LoginPage"
 import SignUpPage from "./pages/SignUpPage"
-import { useAuthStroe } from "./store/useAuthStore"
+import { useAuthStore } from "./store/useAuthStore"
+import { useEffect } from "react"
+import PageLoader from "./components/PageLoader";
+import { Toaster } from 'react-hot-toast'
 
 function App() {
-  const { authUser, isLoggedIn, login } = useAuthStroe();
+  const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
 
-  console.log("auth user: ", authUser);
-  console.log('isLoggedIn: ', isLoggedIn);
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (isCheckingAuth) {
+    return <PageLoader />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 relative flex items-centerjustify-center p-4 overflow-hidden">
       {/* Decorators - Grid BG & Glow Shapes */}
@@ -16,12 +25,42 @@ function App() {
       <div className="absolute top-0 -left-4 size-96 bg-pink-500 opacity-20 blur-[100px]" />
       <div className="absolute bottom-0 -right-4 size-96 bg-cyan-500 opacity-20 blur-[100px]" />
 
-      <button onClick={login} className="z-10">login</button>
       <Routes>
-        <Route path="/" element={<ChatPage />}></Route>
-        <Route path="/login" element={<LoginPage />}></Route>
-        <Route path="/signup" element={<SignUpPage />}></Route>
+
+        <Route
+          path="/"
+          element={
+            authUser ? (
+              <ChatPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        <Route
+          path="/login"
+          element={
+            authUser ? (
+              <Navigate to="/" replace />
+            ) : (
+              <LoginPage />
+            )
+          }
+        />
+
+        <Route
+          path="/signup"
+          element={
+            authUser ? (
+              <Navigate to="/" replace />
+            ) : (
+              <SignUpPage />
+            )
+          }
+        />
       </Routes>
+      <Toaster />
     </div>
   )
 }
