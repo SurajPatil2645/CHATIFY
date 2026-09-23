@@ -38,38 +38,51 @@ function ChatContainer() {
       <div className="flex-1 px-6 overflow-y-auto py-8">
         {messages.length > 0 && !isMessagesLoading ? (
           <div className="max-w-3xl mx-auto space-y-6">
-            {messages.map((msg) => (
-              <div
-                key={msg._id}
-                className={`chat ${msg.senderId === authUser._id ? "chat-end" : "chat-start"}`}
-              >
+            {messages.map((msg) => {
+
+              const senderId = String(
+                msg.senderId?._id || msg.senderId || ""
+              );
+
+              const currentUserId = String(authUser?._id || "");
+              const isSentByMe = senderId === currentUserId;
+
+              return (
                 <div
-                  className={`chat-bubble relative ${
-                    msg.senderId === authUser._id
+                  key={msg._id}
+                  className={`chat ${isSentByMe ? "chat-end" : "chat-start"
+                    }`}
+                >
+                  <div
+                    className={`chat-bubble ${isSentByMe
                       ? "bg-cyan-600 text-white"
                       : "bg-slate-800 text-slate-200"
-                  }`}
-                >
-                  {msg.image && (
-                    <img src={msg.image} alt="Shared" className="rounded-lg h-48 object-cover" />
-                  )}
-                  {msg.text && <p className="mt-2">{msg.text}</p>}
-                  <p className="text-xs mt-1 opacity-75 flex items-center gap-1">
-                    {new Date(msg.createdAt).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
+                      }`}
+                  >
+                    {msg.image && (
+                      <img
+                        src={msg.image}
+                        alt="Shared"
+                        className="rounded-lg h-48 object-cover"
+                      />
+                    )}
+
+                    {msg.text && <p>{msg.text}</p>}
+
+                    <p className="text-xs mt-1 opacity-75">
+                      {new Date(msg.createdAt).toLocaleTimeString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {/* 👇 scroll target */}
             <div ref={messageEndRef} />
           </div>
         ) : isMessagesLoading ? (
           <MessagesLoadingSkeleton />
         ) : (
-          <NoChatHistoryPlaceholder name={selectedUser.fullName} />
+          <NoChatHistoryPlaceholder name={selectedUser.fullname} />
         )}
       </div>
 
