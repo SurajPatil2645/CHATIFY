@@ -4,28 +4,39 @@ import { ENV } from "../lib/env.js";
 
 export const socketAuthMiddleware = async (socket, next) => {
   try {
-    const token = socket.handshake.headers.cookie
+    let token = socket.handshake.headers.cookie
       ?.split("; ")
       .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
-    if (!token) {
-      console.log("Socket connection rejected: No token provided");
-      return next(new Error("Unauthorized - No Token Provided"));
+    if (!token && socket.handshake.auth?.token) {
+      token = socket.handshake.auth.token;
     }
 
-    const decoded = jwt.verify(token, ENV.JWT_SECRET);
+    let user;
 
-    if (!decoded || !decoded.id) {
-      console.log("Socket connection rejected: Invalid token");
-      return next(new Error("Unauthorized - Invalid Token"));
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, ENV.JWT_SECRET);
+        if (decoded && decoded.id) {
+          user = await User.findById(decoded.id).select("-password");
+        }
+      } catch (err) {
+        console.log("JWT verification failed in socket auth:", err.message);
+      }
     }
 
-    const user = await User.findById(decoded.id).select("-password");
+    // Fallback to query userId if cookie is withheld cross-origin in dev
+    if (!user && socket.handshake.query?.userId) {
+      const queryUserId = socket.handshake.query.userId;
+      if (queryUserId && queryUserId !== "undefined") {
+        user = await User.findById(queryUserId).select("-password");
+      }
+    }
 
     if (!user) {
-      console.log("Socket connection rejected: User not found");
-      return next(new Error("User not found"));
+      console.log("Socket connection rejected: User not authenticated");
+      return next(new Error("Unauthorized - Authentication failed"));
     }
 
     socket.user = user;

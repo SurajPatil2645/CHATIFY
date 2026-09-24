@@ -44,7 +44,12 @@ export const signup = async (req, res) => {
             } catch (error) {
                 console.error("Error sending welcome email:", error);
             }
-            return res.status(201).json({ message: "User created successfully" });
+            return res.status(201).json({
+                _id: newUser._id,
+                fullname: newUser.fullname,
+                email: newUser.email,
+                profilePic: newUser.profilePic,
+            });
         } else {
             return res.status(400).json({ message: "Invalid user data" });
         }
@@ -82,7 +87,12 @@ export const signin = async (req, res) => {
         }
 
         generateToken(user._id, res);
-        return res.status(200).json({ message: "User logged in successfully" });
+        return res.status(200).json({
+            _id: user._id,
+            fullname: user.fullname,
+            email: user.email,
+            profilePic: user.profilePic,
+        });
 
     } catch (error) {
         console.error("Signin failed:", error);

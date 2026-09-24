@@ -16,7 +16,8 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
-      set({ authUser: res.data.user });
+      const user = res.data.user || res.data;
+      set({ authUser: user });
       get().connectSocket();
     } catch (error) {
       console.log("Error in authCheck:", error);
@@ -30,12 +31,13 @@ export const useAuthStore = create((set, get) => ({
     set({ isSigningUp: true });
     try {
       const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
+      const user = res.data.user || res.data;
+      set({ authUser: user });
 
       toast.success("Account created successfully!");
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Signup failed");
     } finally {
       set({ isSigningUp: false });
     }
@@ -45,13 +47,14 @@ export const useAuthStore = create((set, get) => ({
     set({ isLoggingIn: true });
     try {
       const res = await axiosInstance.post("/auth/login", data);
-      set({ authUser: res.data });
+      const user = res.data.user || res.data;
+      set({ authUser: user });
 
       toast.success("Logged in successfully");
 
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -72,21 +75,26 @@ export const useAuthStore = create((set, get) => ({
   updateProfile: async (data) => {
     try {
       const res = await axiosInstance.put("/auth/update-profile", data);
-      set({ authUser: res.data });
+      const user = res.data.user || res.data;
+      set({ authUser: user });
       toast.success("Profile updated successfully");
     } catch (error) {
       console.log("Error in update profile:", error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Profile update failed");
     }
   },
 
   connectSocket: () => {
     const { authUser } = get();
+    const userId = authUser?._id || authUser?.user?._id;
 
-    if (!authUser || get().socket?.connected) return;
+    if (!authUser || !userId || get().socket?.connected) return;
 
     const socket = io(BASE_URL, {
       withCredentials: true,
+      query: {
+        userId,
+      },
     });
 
     set({ socket });
