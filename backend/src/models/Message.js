@@ -1,5 +1,20 @@
 import mongoose from 'mongoose';
 
+const reactionSchema = new mongoose.Schema(
+    {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+        emoji: {
+            type: String,
+            required: true,
+        },
+    },
+    { _id: false }
+);
+
 const messageSchema = new mongoose.Schema(
     {
         senderId: {
@@ -18,9 +33,36 @@ const messageSchema = new mongoose.Schema(
             maxlength: 2000,
             default: "",
         },
-        image:{
+        image: {
             type: String,
-        }
+        },
+        isRead: {
+            type: Boolean,
+            default: false,
+        },
+        readAt: {
+            type: Date,
+        },
+        reactions: [reactionSchema],
+        replyTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Message',
+            default: null,
+        },
+        isEdited: {
+            type: Boolean,
+            default: false,
+        },
+        isDeletedForEveryone: {
+            type: Boolean,
+            default: false,
+        },
+        deletedFor: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User',
+            }
+        ],
     },
     { timestamps: true }
 );

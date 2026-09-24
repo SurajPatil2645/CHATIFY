@@ -31,7 +31,7 @@ function ContactList() {
                 />
               </div>
 
-              {onlineUsers.includes(contact._id) && (
+              {onlineUsers.includes(String(contact._id)) && (
                 <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-slate-900" />
               )}
             </div>
